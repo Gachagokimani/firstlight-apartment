@@ -1,243 +1,243 @@
 :root {
-  --ripple-green: #4CAF50;
-  --orange-tree: #E67E22;
-  --lilac: #C8A2C8;
-  --white: #FFFFFF;
-}
-
-.landing-container {
-  position: relative;
-  min-block-size: 100vh;
-  inline-size: 100%;
-  overflow: hidden;
-}
-
-.landing-background {
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 0;
-  inline-size: 100%;
-  block-size: 100%;
-  background: linear-gradient(135deg, var(--lilac) 0%, var(--ripple-green) 100%);
-  opacity: 0.1;
-  z-index: -1;
-}
-
-.landing-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem 2rem;
-  animation: slideDown 0.8s ease-out;
-}
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--ripple-green);
-}
-
-.nav-login-btn {
-  padding: 0.5rem 1.5rem;
-  border: 2px solid var(--ripple-green);
-  border-radius: 25px;
-  background: transparent;
-  color: var(--ripple-green);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.nav-login-btn:hover {
-  background: var(--ripple-green);
-  color: var(--white);
-}
-
-.hero-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 4rem 2rem;
-  margin-block-start: 2rem;
-  animation: fadeIn 1s ease-out;
-}
-
-.hero-title {
-  font-size: 3.5rem;
-  margin-block-end: 1rem;
-  color: #333;
-}
-
-.highlight {
-  color: var(--ripple-green);
-}
-
-.hero-subtitle {
-  font-size: 1.5rem;
-  color: #666;
-  margin-block-end: 2rem;
-}
-
-.cta-buttons {
-  display: flex;
-  gap: 1rem;
-  animation: slideUp 0.8s ease-out 0.5s backwards;
-}
-
-.cta-button {
-  padding: 1rem 2rem;
-  border-radius: 30px;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.cta-button.primary {
-  background: var(--ripple-green);
-  color: var(--white);
-  border: none;
-}
-
-.cta-button.primary:hover {
-  background: var(--orange-tree);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.cta-button.secondary {
-  background: transparent;
-  border: 2px solid var(--lilac);
-  color: var(--lilac);
-}
-
-.cta-button.secondary:hover {
-  background: var(--lilac);
-  color: var(--white);
-  transform: translateY(-2px);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+    --ripple-green: #4CAF50;
+    --orange-tree: #E67E22;
+    --lilac: #C8A2C8;
+    --white: #FFFFFF;
   }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(-20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.5rem;
-  }
-
-  .hero-subtitle {
-    font-size: 1.2rem;
-  }
-
-  .cta-buttons {
-    flex-direction: column;
-  }
-
-  .cta-button {
+  
+  .landing-container {
+    position: relative;
+    min-block-size: 100vh;
     inline-size: 100%;
+    overflow: hidden;
   }
-}
-
-@media (max-width: 480px) {
+  
+  .landing-background {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    background: linear-gradient(135deg, var(--lilac) 0%, var(--ripple-green) 100%);
+    opacity: 0.1;
+    z-index: -1;
+  }
+  
   .landing-nav {
-    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    animation: slideDown 0.8s ease-out;
   }
-
+  
   .logo {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--ripple-green);
   }
-
+  
   .nav-login-btn {
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1.5rem;
+    border: 2px solid var(--ripple-green);
+    border-radius: 25px;
+    background: transparent;
+    color: var(--ripple-green);
+    cursor: pointer;
+    transition: all 0.3s ease;
   }
-
-  .hero-title {
-    font-size: 2rem;
+  
+  .nav-login-btn:hover {
+    background: var(--ripple-green);
+    color: var(--white);
   }
-
-  .hero-subtitle {
-    font-size: 1rem;
-    margin-block-end: 1.5rem;
-  }
-
+  
   .hero-section {
-    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    margin-block-start: 2rem;
+    animation: fadeIn 1s ease-out;
   }
-}
-
-body {
-  background-image: url('/src/images/background.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  animation: backgroundAnimation 5s infinite alternate;
-}
-
-/* Keyframes for background animation */ 
-@keyframes backgroundAnimation {
-  0% {
-    background-size: 120%;
+  
+  .hero-title {
+    font-size: 3.5rem;
+    margin-block-end: 1rem;
+    color: #333;
   }
-  50% {
-    background-size: 80%;
+  
+  .highlight {
+    color: var(--ripple-green);
   }
-  100% {
-    background-size: 100%;
+  
+  .hero-subtitle {
+    font-size: 1.5rem;
+    color: #666;
+    margin-block-end: 2rem;
   }
-}
-
-* {
-  box-sizing: border-box;
-}
+  
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    animation: slideUp 0.8s ease-out 0.5s backwards;
+  }
+  
+  .cta-button {
+    padding: 1rem 2rem;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .cta-button.primary {
+    background: var(--ripple-green);
+    color: var(--white);
+    border: none;
+  }
+  
+  .cta-button.primary:hover {
+    background: var(--orange-tree);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .cta-button.secondary {
+    background: transparent;
+    border: 2px solid var(--lilac);
+    color: var(--lilac);
+  }
+  
+  .cta-button.secondary:hover {
+    background: var(--lilac);
+    color: var(--white);
+    transform: translateY(-2px);
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+  
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideDown {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+  
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+  
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(-20px);
+      opacity: 0;
+    }
+  
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .hero-title {
+      font-size: 2.5rem;
+    }
+  
+    .hero-subtitle {
+      font-size: 1.2rem;
+    }
+  
+    .cta-buttons {
+      flex-direction: column;
+    }
+  
+    .cta-button {
+      inline-size: 100%;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .landing-nav {
+      padding: 1rem;
+    }
+  
+    .logo {
+      font-size: 1.2rem;
+    }
+  
+    .nav-login-btn {
+      padding: 0.4rem 1rem;
+    }
+  
+    .hero-title {
+      font-size: 2rem;
+    }
+  
+    .hero-subtitle {
+      font-size: 1rem;
+      margin-block-end: 1.5rem;
+    }
+  
+    .hero-section {
+      padding: 2rem 1rem;
+    }
+  }
+  
+  body {
+    background-image: url('/src/images/background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    animation: backgroundAnimation 5s infinite alternate;
+  }
+  
+  /* Keyframes for background animation */ 
+  @keyframes backgroundAnimation {
+    0% {
+      background-size: 100%;
+    }
+    50% {
+      background-size: 80%;
+    }
+    100% {
+      background-size: 100%;
+    }
+  }
+  
+  * {
+    box-sizing: border-box;
+  }
