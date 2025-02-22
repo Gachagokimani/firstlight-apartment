@@ -223,9 +223,22 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     animation: backgroundAnimation 5s infinite alternate;
+    background-color: #1a3d2f; /* Jungle green */
+    position: relative;
+    overflow: hidden;
   }
   
-  /* Keyframes for background animation */ 
+  .background-animation {
+    position: absolute;
+    top: 50vh; /* Start below 50% of the viewport height */
+    left: 0;
+    right: 0;
+    height: 50vh; /* Only animate in the lower half */
+    background-color: #1a3d2f; /* Jungle green */
+    animation: backgroundAnimation 5s infinite alternate;
+  }
+  
+  /* Keyframes for background animation */
   @keyframes backgroundAnimation {
     0% {
       background-size: 100%;
