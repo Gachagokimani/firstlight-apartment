@@ -1,0 +1,21 @@
+{
+  "name": "project_brito",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm run dev:frontend\" \"pnpm run dev:backend\"",
+    "dev:frontend": "cd frontend && pnpm run dev",
+    "dev:backend": "cd backend && pnpm run dev",
+    "build": "pnpm run build:frontend",
+    "build:frontend": "cd frontend && pnpm run build",
+    "start": "cd backend && pnpm start",
+    "deploy": "pnpm run build && pnpm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

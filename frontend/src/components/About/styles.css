@@ -1,0 +1,39 @@
+.about-container {
+  background-image: url( '../PrimeLocationCard/images/image.jpg');
+  position: relative;
+  min-block-size: 100vh;
+  inline-size: 100%;
+  padding: 2rem;
+}
+
+.about-background {
+  background-image: url('../PrimeLocationCard/images/bungalo.jpg');
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  background: linear-gradient(135deg, var(--lilac) 0%, var(--ripple-green) 100%);
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.about-content {
+  max-inline-size: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.about-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-block-start: 3rem;
+}
+
+.feature {
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
