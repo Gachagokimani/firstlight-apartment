@@ -13,11 +13,15 @@ const LandingPage = () => {
     navigate('/search');
   };
 
+  const handleAboutClick = () => {
+    navigate('/about');
+  };
+
   return (
     <div className="landing-container">
       <div className="landing-background"></div>
       <nav className="landing-nav">
-        <div className="logo" onClick={() => navigate('/')}>FIRSTLIGHT APARTMENT</div>
+        <div className="logo">FIRSTLIGHT APARTMENT</div>
         <div className="nav-links">
           <button className="nav-btn" onClick={handleSearchClick}>
             Search Homes
@@ -35,21 +39,19 @@ const LandingPage = () => {
           <button className="cta-button primary" onClick={handleSearchClick}>
             Browse Listings
           </button>
-          <button className="cta-button secondary" onClick={() => navigate('/about')}>
+          <button className="cta-button secondary" onClick={handleAboutClick}>
             About Us
           </button>
         </div>
         <div className="prime-locations">
-          <PrimeLocationCard
-            variant="variant-1"
-            title="Prime Location 1"
-            description="Desire apartment prime location 1."
-          />
-          <PrimeLocationCard
-            variant="variant-2"
-            title="Prime Location 2"
-            description="Description of prime location 2."
-          />
+          {Array.from({ length: 10 }).map((_, index) => (
+            <PrimeLocationCard
+              key={index}
+              variant={`variant-${(index % 6) + 1}`}
+              title={`Prime Location ${index + 1}`}
+              description={`Description of prime location ${index + 1}.`}
+            />
+          ))}
         </div>
       </main>
     </div>
