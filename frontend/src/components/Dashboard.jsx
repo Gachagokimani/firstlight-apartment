@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import UserProfile from './UserProfile';
-import PostManager from './PostManager';
+import PostManager from './postManager.jsx';
 import './Dashboard.css';
 
 const Dashboard = ({ user, onLogout, onProfileUpdate }) => {
