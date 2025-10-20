@@ -1,7 +1,6 @@
 // backend/models/User.js
 import pool from '../database.js';
 import bcrypt from 'bcryptjs';
-
 class User {
   // Create new user
   static async create(userData) {
@@ -63,13 +62,19 @@ class User {
     const result = await pool.query(query, values);
     return result.rows[0];
   }
-
+  stat
   // Verify password
   static async verifyPassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
   }
-
-  // Get user with listings count
+  static async changePassword(userId, newPassword) {
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    const query = `
+      UPDATE users 
+      SET password = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `;
+  }// Get user with listings count
   static async getUserWithStats(userId) {
     const query = `
       SELECT 

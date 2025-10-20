@@ -1,5 +1,5 @@
 // backend/controllers/otpController.js
-import emailService from '../services/emailService.js';
+import emailService from '../service/emailService.js';
 import User from '../models/User.js';
 
 export const sendEmailVerificationOTP = async (req, res) => {

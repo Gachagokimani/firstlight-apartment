@@ -1,6 +1,9 @@
 // backend/services/emailService.js
 import transporter, { emailTemplates, otpTemplates } from '../config/emailTemplates.js';
+
 import OTP from '../models/OTP.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 class EmailService {
   constructor() {

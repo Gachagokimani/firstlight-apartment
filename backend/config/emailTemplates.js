@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
@@ -298,7 +298,56 @@ export const emailTemplates = {
       html: baseTemplate(content, 'New Contact Message - FirstLight Apartments')
     };
   },
-  export const otpTemplates= {
+
+  // Welcome Email for New Users
+  welcomeEmail: (data) => {
+    const content = `
+      ${headerTemplate('Welcome to FirstLight!', 'Your journey to finding the perfect home begins now', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)')}
+      ${contentTemplate(`
+        <p style="font-size: 16px; line-height: 1.6; color: #4a5568; margin-bottom: 20px;">
+          Hello <strong style="color: #2d3748;">${data.userName}</strong>,
+        </p>
+        
+        <p style="font-size: 16px; line-height: 1.6; color: #4a5568; margin-bottom: 25px;">
+          Welcome to FirstLight Apartments! We're excited to help you find your perfect rental property 
+          or connect with potential tenants for your listings.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 25px 0;">
+          <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 10px;">
+            <div style="font-size: 24px; margin-bottom: 10px;">🔍</div>
+            <h4 style="margin: 0 0 10px 0; color: #2d3748;">Search Properties</h4>
+            <p style="margin: 0; color: #718096; font-size: 14px;">Browse thousands of rental listings</p>
+          </div>
+          <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 10px;">
+            <div style="font-size: 24px; margin-bottom: 10px;">📅</div>
+            <h4 style="margin: 0 0 10px 0; color: #2d3748;">Schedule Viewings</h4>
+            <p style="margin: 0; color: #718096; font-size: 14px;">Book property visits easily</p>
+          </div>
+        </div>
+
+        ${buttonTemplate('Start Exploring', data.clientUrl, '#667eea')}
+
+        <div style="border-top: 2px solid #e2e8f0; margin-top: 30px; padding-top: 20px;">
+          <p style="font-size: 14px; color: #718096; text-align: center; margin: 0 0 10px 0;">
+            Need help getting started?
+          </p>
+          <p style="font-size: 14px; color: #718096; text-align: center; margin: 0;">
+            Contact us: <a href="mailto:support@firstlight.com" style="color: #667eea; text-decoration: none;">support@firstlight.com</a>
+          </p>
+        </div>
+      `)}
+    `;
+        
+    return {
+      subject: `👋 Welcome to FirstLight Apartments!`,
+      html: baseTemplate(content, 'Welcome to FirstLight Apartments')
+    };
+  }
+};
+
+// OTP Templates
+export const otpTemplates = {
   emailVerification: (data) => ({
     subject: `🔐 Verify Your Email - FirstLight Apartments`,
     html: `
@@ -423,52 +472,6 @@ export const emailTemplates = {
       </div>
     `
   })
-},
-  // Welcome Email for New Users
-  welcomeEmail: (data) => {
-    const content = `
-      ${headerTemplate('Welcome to FirstLight!', 'Your journey to finding the perfect home begins now', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)')}
-      ${contentTemplate(`
-        <p style="font-size: 16px; line-height: 1.6; color: #4a5568; margin-bottom: 20px;">
-          Hello <strong style="color: #2d3748;">${data.userName}</strong>,
-        </p>
-        
-        <p style="font-size: 16px; line-height: 1.6; color: #4a5568; margin-bottom: 25px;">
-          Welcome to FirstLight Apartments! We're excited to help you find your perfect rental property 
-          or connect with potential tenants for your listings.
-        </p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 25px 0;">
-          <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 10px;">
-            <div style="font-size: 24px; margin-bottom: 10px;">🔍</div>
-            <h4 style="margin: 0 0 10px 0; color: #2d3748;">Search Properties</h4>
-            <p style="margin: 0; color: #718096; font-size: 14px;">Browse thousands of rental listings</p>
-          </div>
-          <div style="text-align: center; padding: 20px; background: #f7fafc; border-radius: 10px;">
-            <div style="font-size: 24px; margin-bottom: 10px;">📅</div>
-            <h4 style="margin: 0 0 10px 0; color: #2d3748;">Schedule Viewings</h4>
-            <p style="margin: 0; color: #718096; font-size: 14px;">Book property visits easily</p>
-          </div>
-        </div>
-
-        ${buttonTemplate('Start Exploring', data.clientUrl, '#667eea')}
-
-        <div style="border-top: 2px solid #e2e8f0; margin-top: 30px; padding-top: 20px;">
-          <p style="font-size: 14px; color: #718096; text-align: center; margin: 0 0 10px 0;">
-            Need help getting started?
-          </p>
-          <p style="font-size: 14px; color: #718096; text-align: center; margin: 0;">
-            Contact us: <a href="mailto:support@firstlight.com" style="color: #667eea; text-decoration: none;">support@firstlight.com</a>
-          </p>
-        </div>
-      `)}
-    `;
-        
-    return {
-      subject: `👋 Welcome to FirstLight Apartments!`,
-      html: baseTemplate(content, 'Welcome to FirstLight Apartments')
-    };
-  }
 };
 
 export default transporter;

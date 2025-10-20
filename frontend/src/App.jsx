@@ -114,7 +114,7 @@ function App() {
                 </PublicRoute>
               } 
             />
-            <Route path="/search-homes" element={<SearchHomes />} />
+            <Route path="/search" element={<SearchHomes />} />
             <Route path="/about" element={<About />} />
             <Route path="/users" element={<UserList />} />
 
@@ -152,7 +152,7 @@ function App() {
             />
 
             {/* Fallback route */}
-            <Route path="*" element={<Navigate to={currentUser ? "/dashboard" : "/landing"} />} />
+            <Route path="*" element={<Navigate to={currentUser ?  "/dashboard" : "/landing"} />} />
           </Routes>
         </Suspense>
         <ScrollToTopButton />
