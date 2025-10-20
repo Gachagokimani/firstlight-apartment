@@ -13,7 +13,7 @@ const SearchHomes = lazy(() => import("./components/SearchHomes/HomeListing"));
 const About = lazy(() => import("./components/About/index.jsx"));
 const UserList = lazy(() => import("./components/UserList"));
 const UserProfile = lazy(() => import("./components/UserProfile"));
-const PostManager = lazy(() => import("./components/PostManager"));
+const PostManager = lazy(() => import("./components/postManager"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
 
 // Loading component
