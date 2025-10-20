@@ -1,12 +1,16 @@
 {
   "name": "project_brito",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.18.3",
   "private": true,
+  "type": "module",
   "workspaces": [
     "frontend",
     "backend"
   ],
   "scripts": {
+    "lint": "pnpm --filter ./backend lint && pnpm --filter ./frontend lint",
+    "install": "pnpm --filter ./backend install && pnpm --filter ./frontend install",
     "dev": "concurrently \"pnpm run dev:frontend\" \"pnpm run dev:backend\"",
     "dev:frontend": "cd frontend && pnpm run dev",
     "dev:backend": "cd backend && pnpm run dev",
@@ -16,6 +20,7 @@
     "deploy": "pnpm run build && pnpm start"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "eslint": "^9.38.0"
   }
 }

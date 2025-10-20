@@ -1,6 +1,7 @@
-const express = require('express');
-const pool = require('../database');
-const router = express.Router();
+import express from 'express';
+import pool from '../database.js';
+
+const router = express.Router(); // Changed from userRouter to router
 
 // Example route: Fetch all users
 router.get('/users', async (req, res) => {
@@ -28,4 +29,4 @@ router.post('/users', async (req, res) => {
   }
 });
 
-module.exports = router; 
+export default router; // Now this matches the router we created above

@@ -1,4 +1,4 @@
-# Use a lightweight Node.js image
+ # Use a lightweight Node.js image
 FROM node:18-alpine
 
 # Install pnpm globally
