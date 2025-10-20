@@ -8,7 +8,7 @@ import './App.css';
 // Lazy load components
 const LandingPage = lazy(() => import("./components/LandingPage/index.jsx"));
 const LoginForm = lazy(() => import("./components/LoginForm/index.jsx"));
-const SignupForm = lazy(() => import("./components/Signup/signup.jsx"));
+const SignupForm = lazy(() => import("./components/signup/signup.jsx"));
 const SearchHomes = lazy(() => import("./components/SearchHomes/HomeListing"));
 const About = lazy(() => import("./components/About/index.jsx"));
 const UserList = lazy(() => import("./components/UserList"));
