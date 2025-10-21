@@ -251,3 +251,53 @@
     font-size: 1.75rem;
   }
 }
+/* Password requirements styling */
+.password-requirements {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #667eea;
+}
+
+.password-requirements h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.password-requirements ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.password-requirements li {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.password-requirements .valid {
+  color: #28a745;
+}
+
+.password-requirements .invalid {
+  color: #dc3545;
+}
+
+.error-text {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.success-text {
+  color: #28a745;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.reset-instructions {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #666;
+}

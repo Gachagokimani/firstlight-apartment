@@ -15,6 +15,9 @@ const UserList = lazy(() => import("./components/UserList"));
 const UserProfile = lazy(() => import("./components/UserProfile"));
 const PostManager = lazy(() => import("./components/postManager"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
+const OTPVerification = lazy(() => import("./components/VerifyOTP.jsx"));
+const ForgotPassword = lazy(() => import("./components/ForgotPassword.jsx"));
+const ResetPassword = lazy(() => import("./components/ResetPassword.jsx"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -90,6 +93,11 @@ function App() {
                 </PublicRoute>
               } 
             />
+              <Route path="/verify-otp" element={<OTPVerification />} />
+<Route path="/reset-password" element={<ResetPassword />} />
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+  {/* Add other routes */}
+
             <Route 
               path="/landing" 
               element={

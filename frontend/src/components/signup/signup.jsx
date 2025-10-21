@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import './SignupForm.css';
+import './signupForm.css';
 
 const SignupForm = ({ onSignup }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    phone: '',
+    confirmPassword: '' // Added confirmPassword field
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate(); // Added for navigation
+  const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -24,10 +26,11 @@ const SignupForm = ({ onSignup }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
-    // Client-side validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    // Enhanced validation
+    if (!formData.name || !formData.email || !formData.password) {
+      setError('Please fill in all required fields');
       setLoading(false);
       return;
     }
@@ -38,7 +41,14 @@ const SignupForm = ({ onSignup }) => {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
     try {
+      // 1. Register the user
       const response = await fetch('http://localhost:5000/api/users', {
         method: 'POST',
         headers: {
@@ -47,39 +57,71 @@ const SignupForm = ({ onSignup }) => {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          phone: formData.phone || null
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        onSignup(data.user);
+        // 2. Send verification OTP
+        const otpResponse = await fetch('http://localhost:5000/api/auth/send-verification-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            name: formData.name
+          }),
+        });
+
+        const otpData = await otpResponse.json();
+
+        if (otpResponse.ok) {
+          setSuccess('Account created! Verification OTP sent to your email.');
+          
+          // 3. Redirect to OTP verification page
+          setTimeout(() => {
+            navigate('/verify-otp', {
+              state: {
+                email: formData.email,
+                type: 'email_verification', // Make sure this matches your backend
+                message: 'Please verify your email to activate your account'
+              }
+            });
+          }, 2000);
+        } else {
+          setError('Account created but failed to send verification OTP. Please try logging in to request a new OTP.');
+          setTimeout(() => {
+            navigate('/login');
+          }, 3000);
+        }
       } else {
-        setError(data.error || 'Signup failed');
+        setError(data.error || 'Registration failed. Please try again.');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleReturnHome = () => {
-    navigate('/'); // Use React Router navigation
+    navigate('/');
   };
 
   return (
-    <div className="signup-form-container">
-      <form onSubmit={handleSubmit} className="signup-form">
+    <div className="login-form-container">
+      <form onSubmit={handleSubmit} className="login-form">
         <h2>Create Your Account</h2>
         
         {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
         
         <div className="form-group">
-          <label htmlFor="name">Full Name</label>
+          <label htmlFor="name">Full Name *</label>
           <input
             type="text"
             id="name"
@@ -92,7 +134,7 @@ const SignupForm = ({ onSignup }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">Email *</label>
           <input
             type="email"
             id="email"
@@ -105,7 +147,7 @@ const SignupForm = ({ onSignup }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Password *</label>
           <input
             type="password"
             id="password"
@@ -119,7 +161,7 @@ const SignupForm = ({ onSignup }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="confirmPassword">Confirm Password</label>
+          <label htmlFor="confirmPassword">Confirm Password *</label>
           <input
             type="password"
             id="confirmPassword"
@@ -129,6 +171,18 @@ const SignupForm = ({ onSignup }) => {
             required
             minLength="6"
             placeholder="Confirm your password"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="phone">Phone Number (Optional)</label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="Enter your phone number"
           />
         </div>
 
@@ -148,7 +202,6 @@ const SignupForm = ({ onSignup }) => {
           </p>
         </div>
 
-        {/* Fixed Home Button with proper hover effects */}
         <button
           type="button"
           onClick={handleReturnHome}
@@ -179,12 +232,6 @@ const SignupForm = ({ onSignup }) => {
             e.target.style.color = '#f093fb';
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = 'none';
-          }}
-          onMouseDown={(e) => {
-            e.target.style.transform = 'translateY(0)';
-          }}
-          onMouseUp={(e) => {
-            e.target.style.transform = 'translateY(-2px)';
           }}
         >
           ← Return to Home

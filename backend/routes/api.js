@@ -8,6 +8,9 @@ dotenv.config();
 const router = express.Router();
 
 // Example route: Fetch all users
+router.get('/send-password-reset-otp', (req, res) => {
+  res.json({ message: 'Forgot Password endpoint' });
+});
 router.get('/users', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM users');
@@ -19,6 +22,16 @@ router.get('/users', async (req, res) => {
 });
 
 // Add a new user (registration)
+router.post('/change-password', async (req, res) => {
+  const { name, email, password, phone, role } = req.body;
+  try {
+    const user = await User.create({ name, email, password, phone, role });
+    res.status(201).json(user);
+  } catch (err) {
+    console.error('Error changing password:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 router.post('/users', async (req, res) => {
   const { name, email, password, phone, role } = req.body;
   try {

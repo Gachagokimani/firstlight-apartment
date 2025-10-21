@@ -8,6 +8,7 @@ const LoginForm = ({ onLogin }) => {
     email: '',
     password: ''
   });
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -143,6 +144,16 @@ const LoginForm = ({ onLogin }) => {
         >
           ← Return to Home
         </button>
+        <div className="forgot-password">
+  <button 
+    type="button" 
+    onClick={() => navigate('/forgot-password')}
+    className="link-button"
+    style={{ background: 'none', border: 'none', color: '#667eea', cursor: 'pointer', padding: 0 }}
+     >
+         Forgot your password?
+      </button>
+      </div>
       </form>
     </div>
   );
