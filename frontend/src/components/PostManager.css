@@ -1,4 +1,47 @@
 /* frontend/src/components/PostManager.css */
+/* Icon spacing */
+.tab-button svg,
+.create-listing-button svg,
+.listing-actions button svg,
+.request-actions button svg {
+  margin-right: 8px;
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.listing-specs span svg {
+  margin-right: 4px;
+}
+
+/* Loading state */
+.loading-state {
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Form icon labels */
+.form-group label svg {
+  margin-right: 8px;
+  opacity: 0.7;
+}
 .post-manager {
   max-width: 1200px;
   margin: 0 auto;
@@ -227,7 +270,107 @@
   color: #2d3748;
   margin-bottom: 1rem;
 }
+/* Database Setup Messages */
+.db-setup-message {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
 
+.db-setup-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.db-setup-icon {
+  color: #f39c12;
+  font-size: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.db-setup-text h4 {
+  margin: 0 0 0.5rem 0;
+  color: #856404;
+}
+
+.db-setup-text p {
+  margin: 0.25rem 0;
+  color: #856404;
+}
+
+.db-setup-hint {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.db-setup-notice {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #6c757d;
+}
+
+.db-notice-text {
+  margin: 0;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.db-setup-notice-form {
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.db-setup-notice-form p {
+  margin: 0;
+  color: #1565c0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Enhanced Loading States */
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.loading-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #ccc;
+}
 .listing-description {
   color: #718096;
   font-size: 0.9rem;
