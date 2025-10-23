@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "server.js",
-  "packageManager": "pnpm@10.18.3",
+  "packageManager": "pnpm@10.19.0",
   "type": "module",
   "scripts": {
     "start": "node server.js",
@@ -10,6 +10,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "express-fileupload": "^1.4.0",
     "axio-ng2-dnd": "5.0.4",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
