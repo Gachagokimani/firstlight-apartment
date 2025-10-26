@@ -9,7 +9,91 @@ import bcrypt from 'bcryptjs';
 import fileUpload from 'express-fileupload'; // ADD THIS
 
 const router = express.Router();
+router.get('/verify-token', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    console.log('🔐 Token verification requested');
+    
+    if (!authHeader) {
+      console.log('❌ No authorization header');
+      return res.status(401).json({ 
+        success: false, 
+        error: 'No authorization header' 
+      });
+    }
 
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      console.log('❌ No token provided');
+      return res.status(401).json({ 
+        success: false, 
+        error: 'No token provided' 
+      });
+    }
+
+    // Validate token format (auth_token_timestamp_userId)
+    if (!token.startsWith('auth_token_')) {
+      console.log('❌ Invalid token format:', token);
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Invalid token format' 
+      });
+    }
+
+    // Extract user ID from token
+    const tokenParts = token.split('_');
+    const userId = tokenParts[tokenParts.length - 1];
+    
+    if (!userId || isNaN(userId)) {
+      console.log('❌ Invalid user ID in token');
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Invalid token' 
+      });
+    }
+
+    console.log('🔍 Verifying token for user ID:', userId);
+
+    // Check if user exists and get user data
+    const userResult = await pool.query(
+      'SELECT id, name, email, phone, is_verified, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.log('❌ User not found for ID:', userId);
+      return res.status(401).json({ 
+        success: false, 
+        error: 'User not found' 
+      });
+    }
+
+    const user = userResult.rows[0];
+    
+    console.log('✅ Token valid for user:', user.email);
+    
+    res.json({
+      success: true,
+      valid: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        is_verified: user.is_verified
+      },
+      message: 'Token is valid'
+    });
+
+  } catch (error) {
+    console.error('❌ Token verification error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Token verification failed',
+      details: error.message 
+    });
+  }
+});
 // ADD FILE UPLOAD MIDDLEWARE
 router.use(fileUpload({
   createParentPath: true,

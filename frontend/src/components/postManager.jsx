@@ -1,52 +1,169 @@
 // frontend/src/components/PostManager.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  FaHome, 
-  FaCalendarAlt, 
-  FaEye, 
-  FaEdit, 
-  FaTrash, 
-  FaTimes,
-  FaPlus,
-  FaImage,
-  FaMapMarkerAlt,
-  FaBed,
-  FaBath,
-  FaRulerCombined,
-  FaDollarSign,
-  FaEnvelope,
-  FaPhone,
-  FaCalendar,
-  FaUser,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaExclamationTriangle
+  FaHome, FaCalendarAlt, FaEye, FaEdit, FaTrash, FaTimes,
+  FaPlus, FaImage, FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined,
+  FaDollarSign, FaEnvelope, FaPhone, FaCalendar, FaUser,
+  FaCheckCircle, FaTimesCircle, FaExclamationTriangle,
+  FaChartLine, FaBuilding, FaSync
 } from 'react-icons/fa';
 import { 
-  IoIosStats,
-  IoIosList,
-  IoIosNotifications
+  IoIosStats, IoIosList, IoIosNotifications, IoIosSettings
 } from 'react-icons/io';
+import { MdApartment, MdHouse, MdCabin, MdVilla } from 'react-icons/md';
 import './PostManager.css';
+
+// Constants
+const API_BASE = 'http://localhost:5000/api/auth';
+const MAX_RETRIES = 2;
+const REQUEST_TIMEOUT = 10000;
+
+// Custom hook for API calls
+const useApi = () => {
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  }, []);
+
+  const fetchWithRetry = async (url, options = {}, retryCount = 0) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+      
+      const response = await fetch(url, {
+        ...options,
+        headers: { ...getAuthHeaders(), ...options.headers },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}`);
+        error.status = response.status;
+        
+        if (error.status === 401) {
+          throw new Error('Authentication failed. Please log in again.');
+        }
+        
+        if (error.status >= 400 && error.status < 500) {
+          throw error;
+        }
+        
+        if (retryCount < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          return fetchWithRetry(url, options, retryCount + 1);
+        }
+        throw error;
+      }
+
+      return response;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. Please check your connection.');
+      }
+      throw error;
+    }
+  };
+
+  return { fetchWithRetry, getAuthHeaders };
+};
+
+// Safe JSON parser
+const safeJsonParse = (text) => {
+  if (!text || typeof text !== 'string') {
+    return null;
+  }
+  
+  if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+    throw new Error('Authentication required. Please log in again.');
+  }
+  
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('JSON parse error:', error);
+    throw new Error('Invalid response from server.');
+  }
+};
+
+// Sub-components
+const StatsOverview = ({ userStats }) => (
+  <div className="stats-overview">
+    <div className="stat-card">
+      <div className="stat-icon total"><FaBuilding /></div>
+      <div className="stat-info">
+        <h3>{userStats.totalListings || 0}</h3>
+        <p>Total Listings</p>
+      </div>
+    </div>
+    <div className="stat-card">
+      <div className="stat-icon active"><FaCheckCircle /></div>
+      <div className="stat-info">
+        <h3>{userStats.activeListings || 0}</h3>
+        <p>Active Listings</p>
+      </div>
+    </div>
+    <div className="stat-card">
+      <div className="stat-icon pending"><IoIosNotifications /></div>
+      <div className="stat-info">
+        <h3>{userStats.pendingRequests || 0}</h3>
+        <p>Pending Requests</p>
+      </div>
+    </div>
+    <div className="stat-card">
+      <div className="stat-icon views"><FaEye /></div>
+      <div className="stat-info">
+        <h3>{userStats.totalViews || 0}</h3>
+        <p>Total Views</p>
+      </div>
+    </div>
+  </div>
+);
+
+const LoadingSpinner = () => (
+  <div className="loading-spinner">
+    <FaSync className="spinner-icon" />
+    <p>Loading...</p>
+  </div>
+);
+
+const ErrorMessage = ({ message, onRetry }) => (
+  <div className="error-message">
+    <FaExclamationTriangle className="error-icon" />
+    <div className="error-content">
+      <h4>Something went wrong</h4>
+      <p>{message}</p>
+      {onRetry && (
+        <button className="retry-btn" onClick={onRetry}>
+          <FaSync /> Try Again
+        </button>
+      )}
+    </div>
+  </div>
+);
 
 const PostManager = ({ user }) => {
   const [listings, setListings] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingListing, setEditingListing] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const [viewingRequests, setViewingRequests] = useState([]);
-  const [activeTab, setActiveTab] = useState('my-listings');
   const [userStats, setUserStats] = useState({
     totalListings: 0,
     activeListings: 0,
     pendingRequests: 0,
     totalViews: 0
   });
-  const [dbSetupInProgress, setDbSetupInProgress] = useState(false);
-
-  const navigate = useNavigate();
+  const [showForm, setShowForm] = useState(false);
+  const [editingListing, setEditingListing] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('my-listings');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -65,131 +182,179 @@ const PostManager = ({ user }) => {
     status: 'active'
   });
 
-  // Redirect if no user
+  const { fetchWithRetry } = useApi();
+  const navigate = useNavigate();
+
+  // Authentication check - only run once on mount
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    fetchUserListings();
-    fetchViewingRequests();
-    fetchUserStats();
-  }, [user, navigate]);
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (!user || !token) {
+        console.log('No user or token, redirecting to login');
+        navigate('/login');
+        return;
+      }
 
-  // API base URL
-  const API_BASE = 'http://localhost:5000/api/auth';
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      // Verify token is still valid
+      try {
+        const response = await fetch(`${API_BASE}/verify-token`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Token invalid');
+        }
+        
+        console.log('Token valid, proceeding with data load');
+        setIsAuthenticated(true);
+        await fetchAllData();
+      } catch (error) {
+        console.log('Token validation failed:', error);
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        navigate('/login');
+      }
     };
-  };
 
-  // Fetch user listings
-  const fetchUserListings = async () => {
+    checkAuth();
+  }, []); // Empty dependency array - run only once on mount
+
+  // Single fetch function - no dependencies to avoid re-renders
+  const fetchAllData = useCallback(async () => {
+    if (!user?.id) return;
+    
+    console.log('Starting data fetch...');
+    setIsRefreshing(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE}/listings/user/${user.id}`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
+      // Fetch all data sequentially to avoid race conditions
+      await fetchUserListings();
+      await fetchViewingRequests();
+      await fetchUserStats();
+      console.log('Data fetch completed successfully');
+    } catch (error) {
+      console.error('Error in fetchAllData:', error);
+      // Don't set error state for auth issues - we'll redirect instead
+      if (!error.message.includes('Authentication')) {
+        setError('Failed to load data. Please try again.');
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [user?.id]);
+
+  // Individual fetch functions - defined with useCallback to prevent recreation
+  const fetchUserListings = useCallback(async () => {
+    try {
+      console.log('Fetching user listings...');
+      const response = await fetchWithRetry(`${API_BASE}/listings/user/${user.id}`);
+      const text = await response.text();
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        setMessage(errorData.error || 'Failed to load listings');
+      if (!text) {
         setListings([]);
         return;
       }
 
-      const data = await response.json();
-      setListings(data || []);
-      
+      const data = safeJsonParse(text);
+      setListings(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching listings:', error);
-      setMessage('Unable to connect to server. Please check your connection.');
-      setListings([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch viewing requests
-  const fetchViewingRequests = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/listings/viewing-requests/owner/${user.id}`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
-      
-      if (!response.ok) {
-        setViewingRequests([]);
+      if (error.message.includes('Authentication')) {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        navigate('/login');
         return;
       }
+      setListings([]);
+      throw error;
+    }
+  }, [user?.id, fetchWithRetry, navigate]);
 
-      const data = await response.json();
-      setViewingRequests(data || []);
+  const fetchViewingRequests = useCallback(async () => {
+    try {
+      console.log('Fetching viewing requests...');
+      const response = await fetchWithRetry(
+        `${API_BASE}/listings/viewing-requests/owner/${user.id}`
+      );
+      const text = await response.text();
+      const data = safeJsonParse(text);
+      setViewingRequests(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching viewing requests:', error);
       setViewingRequests([]);
+      throw error;
     }
-  };
+  }, [user?.id, fetchWithRetry]);
 
-  // Fetch user stats
-  const fetchUserStats = async () => {
+  const fetchUserStats = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE}/users/${user.id}/stats`, {
-        method: 'GET',
-        headers: getAuthHeaders()
-      });
+      console.log('Fetching user stats...');
+      const response = await fetchWithRetry(`${API_BASE}/users/${user.id}/stats`);
+      const text = await response.text();
+      const stats = safeJsonParse(text);
       
-      if (!response.ok) {
-        // Calculate stats from existing data as fallback
-        const calculatedStats = {
-          totalListings: listings.length,
-          activeListings: listings.filter(l => l.status === 'active').length,
-          pendingRequests: viewingRequests.filter(r => r.status === 'pending').length,
-          totalViews: 0
-        };
-        setUserStats(calculatedStats);
-        return;
+      if (stats && typeof stats === 'object') {
+        setUserStats(stats);
       }
-
-      const stats = await response.json();
-      setUserStats(stats);
     } catch (error) {
       console.error('Error fetching user stats:', error);
-      // Fallback to calculated stats
-      const calculatedStats = {
-        totalListings: listings.length,
-        activeListings: listings.filter(l => l.status === 'active').length,
-        pendingRequests: viewingRequests.filter(r => r.status === 'pending').length,
-        totalViews: 0
-      };
-      setUserStats(calculatedStats);
+      // Don't throw error for stats - it's not critical
     }
-  };
+  }, [user?.id, fetchWithRetry]);
 
-  const handleInputChange = (e) => {
+  // Form validation
+  const validateForm = useCallback(() => {
+    const required = ['title', 'description', 'price', 'location', 'bedrooms', 'bathrooms', 'area'];
+    const missing = required.filter(field => !formData[field]?.toString().trim());
+    
+    if (missing.length > 0) {
+      setMessage(`Please fill in: ${missing.join(', ')}`);
+      return false;
+    }
+
+    if (isNaN(formData.price) || parseFloat(formData.price) <= 0) {
+      setMessage('Please enter a valid price');
+      return false;
+    }
+
+    if (isNaN(formData.bedrooms) || parseInt(formData.bedrooms) < 0) {
+      setMessage('Please enter valid bedrooms');
+      return false;
+    }
+
+    if (isNaN(formData.bathrooms) || parseFloat(formData.bathrooms) < 0) {
+      setMessage('Please enter valid bathrooms');
+      return false;
+    }
+
+    if (isNaN(formData.area) || parseInt(formData.area) <= 0) {
+      setMessage('Please enter valid area');
+      return false;
+    }
+
+    return true;
+  }, [formData]);
+
+  // Form handlers
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
 
-  const handleAmenityChange = (amenity) => {
+  const handleAmenityChange = useCallback((amenity) => {
     setFormData(prev => ({
       ...prev,
       amenities: prev.amenities.includes(amenity)
         ? prev.amenities.filter(a => a !== amenity)
         : [...prev.amenities, amenity]
     }));
-  };
+  }, []);
 
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
+  const handleImageUpload = useCallback(async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
     setLoading(true);
     
     try {
@@ -201,17 +366,16 @@ const PostManager = ({ user }) => {
         
         const response = await fetch(`${API_BASE}/upload`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
           body: uploadFormData
         });
         
         if (response.ok) {
-          const data = await response.json();
-          uploadedImages.push(data.imageUrl);
-        } else {
-          console.error('Image upload failed:', response.status);
+          const text = await response.text();
+          const data = safeJsonParse(text);
+          if (data?.imageUrl) {
+            uploadedImages.push(data.imageUrl);
+          }
         }
       }
       
@@ -225,20 +389,24 @@ const PostManager = ({ user }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const removeImage = (index) => {
+  const removeImage = useCallback((index) => {
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
-  };
+  }, []);
 
   // Submit listing
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     setMessage('');
+    setError(null);
 
     try {
       const url = editingListing 
@@ -248,58 +416,52 @@ const PostManager = ({ user }) => {
       const method = editingListing ? 'PUT' : 'POST';
 
       const submissionData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         price: parseFloat(formData.price),
-        location: formData.location,
+        location: formData.location.trim(),
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseFloat(formData.bathrooms),
         area: parseInt(formData.area),
         propertyType: formData.propertyType,
         amenities: formData.amenities,
-        availableFrom: new Date(formData.availableFrom).toISOString(),
-        contactEmail: formData.contactEmail || user.email,
-        contactPhone: formData.contactPhone || user.phone || '',
+        availableFrom: formData.availableFrom ? new Date(formData.availableFrom).toISOString() : null,
+        contactEmail: formData.contactEmail || user?.email || '',
+        contactPhone: formData.contactPhone || user?.phone || '',
         images: formData.images,
         authorId: user.id,
         status: formData.status
       };
 
-      const response = await fetch(url, {
+      const response = await fetchWithRetry(url, {
         method,
-        headers: getAuthHeaders(),
         body: JSON.stringify(submissionData)
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server error: ${response.status}. ${errorText}`);
-      }
+      const text = await response.text();
+      safeJsonParse(text); // Validate response
 
-      const data = await response.json();
-
-      setMessage(editingListing ? 'Listing updated successfully!' : 'Listing created successfully!');
+      setMessage(editingListing ? 'Listing updated!' : 'Listing created!');
       setShowForm(false);
       setEditingListing(null);
       resetForm();
-      setDbSetupInProgress(false);
-      
-      // Refresh all data
-      await Promise.all([
-        fetchUserListings(),
-        fetchUserStats(),
-        fetchViewingRequests()
-      ]);
+      await fetchAllData();
       
     } catch (error) {
       console.error('Submit error:', error);
-      setMessage(error.message || 'Network error. Please try again.');
+      if (error.message.includes('Authentication')) {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        navigate('/login');
+        return;
+      }
+      setError(error.message || 'Failed to save listing.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, editingListing, user, validateForm, fetchWithRetry, fetchAllData, navigate]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       title: '',
       description: '',
@@ -316,19 +478,20 @@ const PostManager = ({ user }) => {
       images: [],
       status: 'active'
     });
-  };
+  }, [user]);
 
-  const handleEdit = (listing) => {
+  const handleEdit = useCallback((listing) => {
     setEditingListing(listing);
+    setShowForm(true);
     setFormData({
-      title: listing.title,
-      description: listing.description,
-      price: listing.price.toString(),
-      location: listing.location,
-      bedrooms: listing.bedrooms.toString(),
-      bathrooms: listing.bathrooms.toString(),
-      area: listing.area.toString(),
-      propertyType: listing.property_type || listing.propertyType,
+      title: listing.title || '',
+      description: listing.description || '',
+      price: listing.price?.toString() || '',
+      location: listing.location || '',
+      bedrooms: listing.bedrooms?.toString() || '',
+      bathrooms: listing.bathrooms?.toString() || '',
+      area: listing.area?.toString() || '',
+      propertyType: listing.property_type || listing.propertyType || 'apartment',
       amenities: listing.amenities || [],
       availableFrom: listing.available_from ? listing.available_from.split('T')[0] : '',
       contactEmail: listing.contact_email || listing.contactEmail || user?.email || '',
@@ -336,351 +499,316 @@ const PostManager = ({ user }) => {
       images: listing.images || [],
       status: listing.status || 'active'
     });
-    setShowForm(true);
-  };
+  }, [user]);
 
-  const handleDelete = async (listingId) => {
+  const handleDelete = useCallback(async (listingId) => {
     if (!window.confirm('Are you sure you want to delete this listing?')) return;
 
     try {
-      const response = await fetch(`${API_BASE}/listings/${listingId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      await fetchWithRetry(`${API_BASE}/listings/${listingId}`, {
+        method: 'DELETE'
       });
 
-      if (response.ok) {
-        setMessage('Listing deleted successfully!');
-        await Promise.all([
-          fetchUserListings(),
-          fetchUserStats()
-        ]);
-      } else {
-        const errorData = await response.json();
-        setMessage(errorData.error || 'Error deleting listing');
-      }
+      setMessage('Listing deleted!');
+      await fetchAllData();
     } catch (error) {
       console.error('Delete error:', error);
-      setMessage('Error deleting listing');
+      if (error.message.includes('Authentication')) {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        navigate('/login');
+        return;
+      }
+      setError('Error deleting listing.');
     }
-  };
+  }, [fetchWithRetry, fetchAllData, navigate]);
 
-  const handleStatusChange = async (listingId, newStatus) => {
+  const handleStatusChange = useCallback(async (listingId, newStatus) => {
     try {
-      const response = await fetch(`${API_BASE}/listings/${listingId}/status`, {
+      await fetchWithRetry(`${API_BASE}/listings/${listingId}/status`, {
         method: 'PUT',
-        headers: getAuthHeaders(),
         body: JSON.stringify({ status: newStatus })
       });
 
-      if (response.ok) {
-        setMessage(`Listing status updated to ${newStatus}`);
-        fetchUserListings();
-        fetchUserStats();
-      } else {
-        const errorData = await response.json();
-        setMessage(errorData.error || 'Error updating listing status');
-      }
+      setMessage(`Status updated to ${newStatus}`);
+      await fetchAllData();
     } catch (error) {
       console.error('Status change error:', error);
-      setMessage('Error updating listing status');
+      if (error.message.includes('Authentication')) {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        navigate('/login');
+        return;
+      }
+      setError('Error updating status.');
     }
-  };
+  }, [fetchWithRetry, fetchAllData, navigate]);
 
-  const handleViewingResponse = async (requestId, status) => {
+  const handleViewingResponse = useCallback(async (requestId, status) => {
     try {
-      const response = await fetch(`${API_BASE}/listings/viewing-requests/${requestId}`, {
+      await fetchWithRetry(`${API_BASE}/listings/viewing-requests/${requestId}`, {
         method: 'PUT',
-        headers: getAuthHeaders(),
         body: JSON.stringify({ 
           status,
           respondedBy: user.id 
         })
       });
 
-      if (response.ok) {
-        setMessage(`Viewing request ${status}`);
-        fetchViewingRequests();
-        fetchUserStats();
-      } else {
-        const errorData = await response.json();
-        setMessage(errorData.error || 'Error updating viewing request');
-      }
+      setMessage(`Request ${status}`);
+      await fetchAllData();
     } catch (error) {
       console.error('Viewing response error:', error);
-      setMessage('Error updating viewing request');
+      if (error.message.includes('Authentication')) {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+        navigate('/login');
+        return;
+      }
+      setError('Error updating request.');
     }
-  };
+  }, [user?.id, fetchWithRetry, fetchAllData, navigate]);
 
-  // Stats Overview Component
-  const StatsOverview = () => (
-    <div className="stats-overview">
-      <div className="stat-card">
-        <div className="stat-icon"><FaHome /></div>
-        <div className="stat-info">
-          <h3>{userStats.totalListings}</h3>
-          <p>Total Listings</p>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon"><FaCheckCircle /></div>
-        <div className="stat-info">
-          <h3>{userStats.activeListings}</h3>
-          <p>Active Listings</p>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon"><IoIosNotifications /></div>
-        <div className="stat-info">
-          <h3>{userStats.pendingRequests}</h3>
-          <p>Pending Requests</p>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon"><FaEye /></div>
-        <div className="stat-info">
-          <h3>{userStats.totalViews}</h3>
-          <p>Total Views</p>
-        </div>
-      </div>
-    </div>
-  );
+  const closeForm = useCallback(() => {
+    setShowForm(false);
+    setEditingListing(null);
+    resetForm();
+    setError(null);
+    setMessage('');
+  }, [resetForm]);
 
-  // Database Setup Message Component
-  const DatabaseSetupMessage = () => (
-    <div className="db-setup-message">
-      <div className="db-setup-content">
-        <FaExclamationTriangle className="db-setup-icon" />
-        <div className="db-setup-text">
-          <h4>Database Setup Required</h4>
-          <p>Your rental listings database is being set up. This might take a moment.</p>
-          <p className="db-setup-hint">
-            <strong>Tip:</strong> Try creating your first listing to initialize the system.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  const clearMessages = useCallback(() => {
+    setError(null);
+    setMessage('');
+  }, []);
+
+  // Don't render anything if not authenticated
+  if (!isAuthenticated) {
+    return <LoadingSpinner />;
+  }
 
   const pendingRequestsCount = viewingRequests.filter(req => req.status === 'pending').length;
+
+  // Main content render
+  const renderContent = () => {
+    if (error && listings.length === 0 && viewingRequests.length === 0) {
+      return <ErrorMessage message={error} onRetry={fetchAllData} />;
+    }
+
+    if (isRefreshing && listings.length === 0) {
+      return <LoadingSpinner />;
+    }
+
+    return (
+      <>
+        <StatsOverview userStats={userStats} />
+
+        <div className="tabs-container">
+          <div className="tabs-header">
+            <button 
+              className={`tab-btn ${activeTab === 'my-listings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('my-listings')}
+            >
+              <IoIosList /> My Listings ({listings.length})
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'viewing-requests' ? 'active' : ''}`}
+              onClick={() => setActiveTab('viewing-requests')}
+            >
+              <IoIosNotifications /> Viewing Requests ({pendingRequestsCount})
+            </button>
+          </div>
+
+          <div className="tab-content">
+            {activeTab === 'my-listings' && (
+              <div className="listings-section">
+                <div className="section-header">
+                  <h2>My Rental Listings</h2>
+                  <button 
+                    className="btn-primary"
+                    onClick={() => setShowForm(true)}
+                    disabled={loading}
+                  >
+                    <FaPlus /> Add New Listing
+                  </button>
+                </div>
+                
+                {listings.length === 0 ? (
+                  <div className="empty-state">
+                    <FaBuilding className="empty-icon" />
+                    <h3>No Listings Yet</h3>
+                    <p>Create your first rental listing to get started</p>
+                    <button 
+                      className="btn-primary"
+                      onClick={() => setShowForm(true)}
+                    >
+                      <FaPlus /> Create First Listing
+                    </button>
+                  </div>
+                ) : (
+                  <div className="listings-grid">
+                    {listings.map((listing) => (
+                      <div key={listing.id} className="listing-card">
+                        <div className="listing-image">
+                          {listing.images?.[0] ? (
+                            <img src={listing.images[0]} alt={listing.title} />
+                          ) : (
+                            <div className="no-image">No Image</div>
+                          )}
+                          <div className="listing-status">
+                            <span className={`status-badge ${listing.status}`}>
+                              {listing.status}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="listing-content">
+                          <h3>{listing.title}</h3>
+                          <p className="listing-location">
+                            <FaMapMarkerAlt /> {listing.location}
+                          </p>
+                          
+                          <div className="listing-features">
+                            <span><FaBed /> {listing.bedrooms} bed</span>
+                            <span><FaBath /> {listing.bathrooms} bath</span>
+                            <span><FaRulerCombined /> {listing.area} sq ft</span>
+                          </div>
+                          
+                          <div className="listing-price">
+                            <FaDollarSign /> {listing.price}/month
+                          </div>
+                          
+                          <div className="listing-actions">
+                            <button 
+                              className="btn-icon"
+                              onClick={() => handleEdit(listing)}
+                              title="Edit"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button 
+                              className="btn-icon"
+                              onClick={() => handleStatusChange(
+                                listing.id, 
+                                listing.status === 'active' ? 'inactive' : 'active'
+                              )}
+                              title={listing.status === 'active' ? 'Deactivate' : 'Activate'}
+                            >
+                              {listing.status === 'active' ? <FaTimesCircle /> : <FaCheckCircle />}
+                            </button>
+                            <button 
+                              className="btn-icon danger"
+                              onClick={() => handleDelete(listing.id)}
+                              title="Delete"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'viewing-requests' && (
+              <div className="requests-section">
+                <h2>Viewing Requests</h2>
+                {viewingRequests.length === 0 ? (
+                  <div className="empty-state">
+                    <FaEye className="empty-icon" />
+                    <h3>No Viewing Requests</h3>
+                    <p>You don't have any viewing requests yet</p>
+                  </div>
+                ) : (
+                  <div className="requests-list">
+                    {viewingRequests.map((request) => (
+                      <div key={request.id} className="request-card">
+                        <div className="request-header">
+                          <h4>Request for: {request.listing?.title}</h4>
+                          <span className={`status-badge ${request.status}`}>
+                            {request.status}
+                          </span>
+                        </div>
+                        <div className="request-details">
+                          <p><FaUser /> {request.requester?.name || 'Unknown User'}</p>
+                          <p><FaEnvelope /> {request.requester?.email}</p>
+                          <p><FaPhone /> {request.contactPhone || 'Not provided'}</p>
+                          <p><FaCalendar /> {new Date(request.preferredDate).toLocaleDateString()}</p>
+                          <p>{request.message}</p>
+                        </div>
+                        {request.status === 'pending' && (
+                          <div className="request-actions">
+                            <button 
+                              className="btn-success"
+                              onClick={() => handleViewingResponse(request.id, 'approved')}
+                            >
+                              <FaCheckCircle /> Approve
+                            </button>
+                            <button 
+                              className="btn-danger"
+                              onClick={() => handleViewingResponse(request.id, 'rejected')}
+                            >
+                              <FaTimesCircle /> Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="post-manager">
       <div className="post-manager-header">
-        <h2><IoIosStats /> Manage Your Rental Listings</h2>
-        <p>Welcome back, {user.name}! Manage your properties and connect with potential tenants.</p>
-      </div>
-
-      {dbSetupInProgress && <DatabaseSetupMessage />}
-
-      {message && (
-        <div className={`message ${message.includes('successfully') ? 'success' : 'error'}`}>
-          {message}
+        <div className="header-content">
+          <h1>
+            <FaHome /> Property Manager
+          </h1>
+          <div className="header-actions">
+            <button 
+              className="btn-secondary"
+              onClick={fetchAllData}
+              disabled={isRefreshing}
+            >
+              <FaSync className={isRefreshing ? 'spinning' : ''} /> Refresh
+            </button>
+          </div>
         </div>
-      )}
-
-      <div className="post-manager-tabs">
-        <button 
-          className={`tab-button ${activeTab === 'my-listings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('my-listings')}
-        >
-          <IoIosList /> My Listings ({listings.length})
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'viewing-requests' ? 'active' : ''}`}
-          onClick={() => setActiveTab('viewing-requests')}
-        >
-          <IoIosNotifications /> Viewing Requests ({pendingRequestsCount})
-        </button>
+        
+        {(message || error) && (
+          <div className={`message ${error ? 'error' : 'success'}`}>
+            {error ? <FaTimesCircle /> : <FaCheckCircle />}
+            <span>{error || message}</span>
+            <button onClick={clearMessages}>
+              <FaTimes />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="post-manager-content">
-        {activeTab === 'my-listings' && (
-          <div className="listings-section">
-            <div className="section-header">
-              <h3><IoIosList /> My Rental Listings</h3>
-              <button 
-                className="create-listing-button"
-                onClick={() => setShowForm(true)}
-                disabled={loading}
-              >
-                <FaPlus /> Create New Listing
-              </button>
-            </div>
-
-            <StatsOverview />
-
-            {loading ? (
-              <div className="loading-state">
-                <div className="loading-spinner"></div>
-                <p>Loading your listings...</p>
-              </div>
-            ) : listings.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><FaHome /></div>
-                <h4>No listings yet</h4>
-                <p>Create your first rental listing to get started!</p>
-                {dbSetupInProgress ? (
-                  <div className="db-setup-notice">
-                    <p className="db-notice-text">
-                      <FaExclamationTriangle /> Database initialization in progress...
-                    </p>
-                  </div>
-                ) : (
-                  <button 
-                    className="create-listing-button"
-                    onClick={() => setShowForm(true)}
-                  >
-                    <FaPlus /> Create Your First Listing
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="listings-grid">
-                {listings.map(listing => (
-                  <div key={listing.id} className="listing-card">
-                    <div className="listing-images">
-                      {listing.images && listing.images.length > 0 ? (
-                        <img src={listing.images[0]} alt={listing.title} />
-                      ) : (
-                        <div className="no-image"><FaImage /></div>
-                      )}
-                      <div className="listing-status">
-                        <span className={`status-badge ${listing.status || 'active'}`}>
-                          {listing.status || 'Active'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="listing-details">
-                      <h4>{listing.title}</h4>
-                      <p className="listing-location"><FaMapMarkerAlt /> {listing.location}</p>
-                      <div className="listing-specs">
-                        <span><FaBed /> {listing.bedrooms} bed</span>
-                        <span><FaBath /> {listing.bathrooms} bath</span>
-                        <span><FaRulerCombined /> {listing.area} sq ft</span>
-                      </div>
-                      <p className="listing-price"><FaDollarSign />{listing.price}/month</p>
-                      <p className="listing-description">{listing.description}</p>
-                      
-                      <div className="listing-meta">
-                        <span>Created: {new Date(listing.created_at).toLocaleDateString()}</span>
-                      </div>
-                      
-                      <div className="listing-actions">
-                        <select 
-                          value={listing.status || 'active'} 
-                          onChange={(e) => handleStatusChange(listing.id, e.target.value)}
-                          className="status-select"
-                        >
-                          <option value="active">Active</option>
-                          <option value="pending">Pending</option>
-                          <option value="rented">Rented</option>
-                          <option value="inactive">Inactive</option>
-                        </select>
-                        
-                        <button 
-                          className="edit-button"
-                          onClick={() => handleEdit(listing)}
-                        >
-                          <FaEdit /> Edit
-                        </button>
-                        <button 
-                          className="delete-button"
-                          onClick={() => handleDelete(listing.id)}
-                        >
-                          <FaTrash /> Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {activeTab === 'viewing-requests' && (
-          <div className="viewing-requests-section">
-            <h3><FaCalendarAlt /> Viewing Requests</h3>
-            
-            {viewingRequests.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><FaCalendarAlt /></div>
-                <h4>No viewing requests</h4>
-                <p>You'll see viewing requests from interested tenants here.</p>
-                {dbSetupInProgress && (
-                  <div className="db-setup-notice">
-                    <p className="db-notice-text">
-                      <FaExclamationTriangle /> Database setup may affect viewing requests
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="requests-list">
-                {viewingRequests.map(request => (
-                  <div key={request.id} className="request-card">
-                    <div className="request-header">
-                      <h4>{request.title || 'Unknown Listing'}</h4>
-                      <span className={`status-badge ${request.status}`}>
-                        {request.status}
-                      </span>
-                    </div>
-                    
-                    <div className="request-details">
-                      <p><strong><FaUser /> From:</strong> {request.requester_name} ({request.requester_email})</p>
-                      <p><strong><FaPhone /> Phone:</strong> {request.requester_phone || 'Not provided'}</p>
-                      <p><strong><FaCalendarAlt /> Preferred Date:</strong> {new Date(request.preferred_date).toLocaleDateString()}</p>
-                      <p><strong>Message:</strong> {request.message}</p>
-                      <p><strong>Submitted:</strong> {new Date(request.requested_at).toLocaleDateString()}</p>
-                    </div>
-
-                    {request.status === 'pending' && (
-                      <div className="request-actions">
-                        <button 
-                          className="approve-button"
-                          onClick={() => handleViewingResponse(request.id, 'approved')}
-                        >
-                          <FaCheckCircle /> Approve
-                        </button>
-                        <button 
-                          className="decline-button"
-                          onClick={() => handleViewingResponse(request.id, 'declined')}
-                        >
-                          <FaTimesCircle /> Decline
-                        </button>
-                      </div>
-                    )}
-                    
-                    {request.status === 'approved' && (
-                      <div className="request-approved">
-                        <p><FaCheckCircle /> You approved this request</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {renderContent()}
       </div>
 
+      {/* Listing Form Modal */}
       {showForm && (
-        <div className="listing-form-overlay">
-          <div className="listing-form-container">
-            <div className="form-header">
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
               <h2>{editingListing ? 'Edit Listing' : 'Create New Listing'}</h2>
-              <button 
-                className="close-button"
-                onClick={() => {
-                  setShowForm(false);
-                  setEditingListing(null);
-                  resetForm();
-                }}
-              >
+              <button className="close-btn" onClick={closeForm}>
                 <FaTimes />
               </button>
             </div>
-
+            
             <form onSubmit={handleSubmit} className="listing-form">
               <div className="form-grid">
                 <div className="form-group">
@@ -691,17 +819,87 @@ const PostManager = ({ user }) => {
                     value={formData.title}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., Beautiful 2-Bedroom Apartment"
                   />
                 </div>
-
+                
                 <div className="form-group">
-                  <label>Property Type *</label>
+                  <label>Description *</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows="3"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Price per Month ($) *</label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Location *</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Bedrooms *</label>
+                  <input
+                    type="number"
+                    name="bedrooms"
+                    value={formData.bedrooms}
+                    onChange={handleInputChange}
+                    min="0"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Bathrooms *</label>
+                  <input
+                    type="number"
+                    name="bathrooms"
+                    value={formData.bathrooms}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="0.5"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Area (sq ft) *</label>
+                  <input
+                    type="number"
+                    name="area"
+                    value={formData.area}
+                    onChange={handleInputChange}
+                    min="0"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Property Type</label>
                   <select
                     name="propertyType"
                     value={formData.propertyType}
                     onChange={handleInputChange}
-                    required
                   >
                     <option value="apartment">Apartment</option>
                     <option value="house">House</option>
@@ -710,182 +908,93 @@ const PostManager = ({ user }) => {
                     <option value="townhouse">Townhouse</option>
                   </select>
                 </div>
-
+                
                 <div className="form-group">
-                  <label><FaDollarSign /> Price ($) *</label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Monthly rent"
-                    min="0"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label><FaMapMarkerAlt /> Location *</label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Full address"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label><FaBed /> Bedrooms *</label>
-                  <input
-                    type="number"
-                    name="bedrooms"
-                    value={formData.bedrooms}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label><FaBath /> Bathrooms *</label>
-                  <input
-                    type="number"
-                    name="bathrooms"
-                    value={formData.bathrooms}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.5"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label><FaRulerCombined /> Area (sq ft) *</label>
-                  <input
-                    type="number"
-                    name="area"
-                    value={formData.area}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Square footage"
-                    min="0"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label><FaCalendar /> Available From *</label>
+                  <label>Available From</label>
                   <input
                     type="date"
                     name="availableFrom"
                     value={formData.availableFrom}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
-
+                
                 <div className="form-group">
-                  <label><FaEnvelope /> Contact Email</label>
+                  <label>Contact Email</label>
                   <input
                     type="email"
                     name="contactEmail"
                     value={formData.contactEmail}
                     onChange={handleInputChange}
-                    placeholder={user?.email || "Your email"}
                   />
                 </div>
-
+                
                 <div className="form-group">
-                  <label><FaPhone /> Contact Phone</label>
+                  <label>Contact Phone</label>
                   <input
                     type="tel"
                     name="contactPhone"
                     value={formData.contactPhone}
                     onChange={handleInputChange}
-                    placeholder={user?.phone || "Your phone number"}
                   />
                 </div>
               </div>
-
-              <div className="form-group full-width">
-                <label>Description *</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  required
-                  rows="4"
-                  placeholder="Describe the property, neighborhood, and key features..."
-                />
-              </div>
-
-              <div className="form-group full-width">
+              
+              <div className="form-section">
                 <label>Amenities</label>
                 <div className="amenities-grid">
-                  {['parking', 'laundry', 'furnished', 'pet-friendly', 'gym', 'pool', 'balcony', 'garden', 'security', 'elevator', 'air-conditioning', 'heating'].map(amenity => (
+                  {['wifi', 'parking', 'pool', 'gym', 'laundry', 'ac', 'heating', 'furnished'].map(amenity => (
                     <label key={amenity} className="amenity-checkbox">
                       <input
                         type="checkbox"
                         checked={formData.amenities.includes(amenity)}
                         onChange={() => handleAmenityChange(amenity)}
                       />
-                      <span>{amenity.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</span>
+                      <span>{amenity.charAt(0).toUpperCase() + amenity.slice(1)}</span>
                     </label>
                   ))}
                 </div>
               </div>
-
-              <div className="form-group full-width">
-                <label><FaImage /> Images</label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={loading}
-                />
-                <div className="image-preview">
-                  {formData.images.map((image, index) => (
-                    <div key={index} className="preview-image">
-                      <img src={image} alt={`Preview ${index + 1}`} />
-                      <button 
-                        type="button" 
-                        className="remove-image"
-                        onClick={() => removeImage(index)}
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                  ))}
+              
+              <div className="form-section">
+                <label>Images</label>
+                <div className="image-upload">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                  />
+                  <FaImage /> Upload Images
                 </div>
+                {formData.images.length > 0 && (
+                  <div className="image-preview">
+                    {formData.images.map((image, index) => (
+                      <div key={index} className="preview-item">
+                        <img src={image} alt={`Preview ${index}`} />
+                        <button type="button" onClick={() => removeImage(index)}>
+                          <FaTimes />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-
-              {dbSetupInProgress && (
-                <div className="db-setup-notice-form">
-                  <p><FaExclamationTriangle /> Database setup detected. First-time creation may take a moment.</p>
-                </div>
-              )}
-
+              
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingListing(null);
-                    resetForm();
-                  }}
-                  disabled={loading}
+                <button 
+                  type="button" 
+                  className="btn-secondary"
+                  onClick={closeForm}
                 >
-                  <FaTimes /> Cancel
+                  Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="submit-button"
+                <button 
+                  type="submit" 
+                  className="btn-primary"
                   disabled={loading}
                 >
-                  {loading ? 'Saving...' : (editingListing ? <><FaEdit /> Update Listing</> : <><FaPlus /> Create Listing</>)}
+                  {loading ? 'Saving...' : (editingListing ? 'Update Listing' : 'Create Listing')}
                 </button>
               </div>
             </form>
